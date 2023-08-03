@@ -33,18 +33,20 @@ mod ffi {
         type Alignment;
 
         fn new_graph() -> UniquePtr<Graph>;
+        fn graph_node_count(graph: &UniquePtr<Graph>) -> usize;
+        fn graph_edge_count(graph: &UniquePtr<Graph>) -> usize;
+        fn generate_consensus(graph: &UniquePtr<Graph>) -> UniquePtr<CxxString>;
+        fn generate_msa(graph: &UniquePtr<Graph>) -> UniquePtr<CxxVector<CxxString>>;
 
         fn create_alignment_engine_linear(aln_type: AlignmentType, score_match: i8, score_mismatch: i8, score_gap: i8) -> UniquePtr<AlignmentEngine>;
         fn create_alignment_engine_affine(aln_type: AlignmentType, score_match: i8, score_mismatch: i8, score_gap_open: i8, score_gap_extend: i8) -> UniquePtr<AlignmentEngine>;
         fn create_alignment_engine_convex(aln_type: AlignmentType, score_match: i8, score_mismatch: i8, score_gap_open: i8, score_gap_extend: i8,
                                           score_gap_open2: i8, score_gap_extend2: i8) -> UniquePtr<AlignmentEngine>;
 
-        fn align(alignment_engine: &mut UniquePtr<AlignmentEngine>, seq: &str, graph: &UniquePtr<Graph>) -> UniquePtr<Alignment>;
+        fn align(alignment_engine: &mut UniquePtr<AlignmentEngine>, seq: &str, graph: &UniquePtr<Graph>, score: &mut i32) -> UniquePtr<Alignment>;
         fn add_alignment(graph: &mut UniquePtr<Graph>, aln: &UniquePtr<Alignment>, seq: &str);
         fn add_alignment_with_weights(graph: &mut UniquePtr<Graph>, aln: &UniquePtr<Alignment>, seq: &str, weights: &[u32]);
 
-        fn generate_consensus(graph: &UniquePtr<Graph>) -> UniquePtr<CxxString>;
-        fn generate_msa(graph: &UniquePtr<Graph>) -> UniquePtr<CxxVector<CxxString>>;
     }
 }
 
@@ -64,6 +66,14 @@ pub struct Graph {
 impl Graph {
     pub fn new() -> Self {
         Self { graph_impl: ffi::new_graph() }
+    }
+
+    pub fn node_count(&self) -> usize {
+        ffi::graph_node_count(&self.graph_impl)
+    }
+
+    pub fn edge_count(&self) -> usize {
+        ffi::graph_edge_count(&self.graph_impl)
     }
 
     pub fn add_alignment(&mut self, alignment: Alignment, seq: &str) {
@@ -114,8 +124,13 @@ impl AlignmentEngine {
         }
     }
 
-    pub fn align(&mut self, seq: &str, graph: &Graph) -> Alignment {
-        Alignment { alignment_ptr: ffi::align(&mut self.engine_impl, seq, &graph.graph_impl) }
+    pub fn align(&mut self, seq: &str, graph: &Graph) -> (i32, Alignment) {
+        let mut score: i32 = 0;
+        let alignment = Alignment {
+            alignment_ptr: ffi::align(&mut self.engine_impl, seq, &graph.graph_impl, &mut score)
+        };
+
+        (score, alignment)
     }
 }
 

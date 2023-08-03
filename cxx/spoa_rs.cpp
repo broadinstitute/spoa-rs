@@ -10,6 +10,22 @@ namespace spoa_rs {
         return std::make_unique<spoa::Graph>();
     }
 
+    size_t graph_node_count(unique_ptr<spoa::Graph> const& graph) {
+        return graph->nodes().size();
+    }
+
+    size_t graph_edge_count(unique_ptr<spoa::Graph> const& graph) {
+        return graph->edges().size();
+    }
+
+    unique_ptr<std::string> generate_consensus(unique_ptr<spoa::Graph> const& graph) {
+        return std::make_unique<std::string>(graph->GenerateConsensus());
+    }
+
+    unique_ptr<std::vector<std::string>> generate_msa(unique_ptr<spoa::Graph> const& graph) {
+        return std::make_unique<std::vector<std::string>>(graph->GenerateMultipleSequenceAlignment());
+    }
+
     unique_ptr<spoa::AlignmentEngine> create_alignment_engine_linear(spoa::AlignmentType type, int8_t score_match, int8_t score_mismatch,
                                                                      int8_t score_gap) {
        return spoa::AlignmentEngine::Create(type, score_match, score_mismatch, score_gap);
@@ -27,8 +43,8 @@ namespace spoa_rs {
                                              score_gap_open2, score_gap_extend2);
     }
 
-    unique_ptr<spoa::Alignment> align(unique_ptr<spoa::AlignmentEngine>& engine, rust::Str sequence, unique_ptr<spoa::Graph> const& graph) {
-        return std::make_unique<spoa::Alignment>(engine->Align(sequence.data(), sequence.length(), *graph));
+    unique_ptr<spoa::Alignment> align(unique_ptr<spoa::AlignmentEngine>& engine, rust::Str sequence, unique_ptr<spoa::Graph> const& graph, std::int32_t& score) {
+        return std::make_unique<spoa::Alignment>(engine->Align(sequence.data(), sequence.length(), *graph, &score));
     }
 
     void add_alignment(unique_ptr<spoa::Graph>& graph, unique_ptr<spoa::Alignment> const& alignment, rust::Str sequence) {
@@ -42,11 +58,4 @@ namespace spoa_rs {
         graph->AddAlignment(*alignment, sequence.data(), sequence.length(), cpp_weights);
     }
 
-    unique_ptr<std::string> generate_consensus(unique_ptr<spoa::Graph> const& graph) {
-        return std::make_unique<std::string>(graph->GenerateConsensus());
-    }
-
-    unique_ptr<std::vector<std::string>> generate_msa(unique_ptr<spoa::Graph> const& graph) {
-        return std::make_unique<std::vector<std::string>>(graph->GenerateMultipleSequenceAlignment());
-    }
 }
